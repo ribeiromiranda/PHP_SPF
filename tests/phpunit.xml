@@ -1,0 +1,19 @@
+<phpunit bootstrap="./Bootstrap.php" colors="true" verbose="true">
+    <testsuites>
+        <testsuite name="PHP_SPF">
+            <directory suffix="Test.php">./PHP_SPF/.</directory>
+        </testsuite>
+    </testsuites>
+
+    <groups>
+        <exclude>
+            <group>disable</group>
+        </exclude>
+    </groups>
+
+    <filter>
+        <whitelist>
+            <directory suffix=".php">../lib/PHP_SPF/</directory>
+        </whitelist>
+    </filter>
+</phpunit>
