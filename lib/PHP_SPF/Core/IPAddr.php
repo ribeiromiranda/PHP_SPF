@@ -31,7 +31,7 @@ class IPAddr {
 
     const MASK16 = 65535;
 
-    private $address = array();
+    private $address;
 
     private $mask = array();
 
@@ -127,7 +127,7 @@ class IPAddr {
         for ($i = 0; $i < $this->ipRun; $i++) {
             // full mask
             if ($i < $startMask) {
-                $mask[$i] = MASK16;
+                $mask[$i] = self::MASK16;
                 // variable mask
             } else if ($i == $startMask) {
                 $shift = (($i + 1) * $maskSize) - $maskLength;
@@ -147,12 +147,7 @@ class IPAddr {
      * @return modified The Given String with last char stripped
      */
     public static function stripDot($data) {
-        $data = trim($data);
-        if ($data.endsWith(".")) {
-            return $data.substring(0, data.length() - 1);
-        } else {
-            return $data;
-        }
+        return rtrim(trim($data), '.');
     }
 
     /**
@@ -169,20 +164,21 @@ class IPAddr {
         try {
             $bytes = Inet6Util::createByteArrayFromIPAddressString($netAddress);
 
-            if ($bytes.length == 4) {
-                for ($i = 0; $i < $bytes.length; $i++) {
+            if (count($bytes) == 4) {
+                for ($i = 0; $i < count($bytes); $i++) {
                     $this->address[$i] = $bytes[$i];
                 }
-            } else if ($bytes.length == 16) {
+            } else if (count($bytes) == 16) {
                 $this->setIP6Defaults();
-                for ($i = 0; $i < bytes.length / 2; $i++) {
-                    $this->address[$i] = unsigned($bytes[$i * 2]) * 256 + unsigned($bytes[$i * 2 + 1]);
+                for ($i = 0; $i < count($bytes) / 2; $i++) {
+                    $this->address[$i] = ($bytes[$i * 2]) * 256 + ($bytes[$i * 2 + 1]);
                 }
             } else {
                 throw new PermErrorException("Not a valid address: " + netAddress);
             }
+
         } catch (NumberFormatException $e) {
-            throw new PermErrorException("Not a valid address: " + netAddress);
+            throw new PermErrorException("Not a valid address: {$netAddress}");
         }
     }
 
@@ -193,10 +189,10 @@ class IPAddr {
      * @return The Hexdecimal representation of the given value
      */
     private function getHex($data) {
-        $fullHex = new StringBuffer();
-        $fullHex.append("0000" + Long.toHexString(data).toUpperCase());
-        $fullHex = $fullHex.delete(0, fullHex.length() - 4);
-        return $fullHex.toString();
+        $fullHex = '';
+        $fullHex .= '0000' . strtoupper(dechex($data));
+        $fullHex = substr($fullHex, -4);
+        return $fullHex;
     }
 
     /**
@@ -247,23 +243,23 @@ class IPAddr {
      *
      * @return ipAddress The ipAddress in nibbleFormat
      */
-    private function getNibbleFormat(array $address = null) {
-        if ($address === null) {
+    public function getNibbleFormat(array $address = null) {
+        if ($address !== null) {
             $this->address = $address;
         }
 
-        $sb = new StringBuffer();
-        $ip = $address;
-        for ($i = 0; i < ip.length; $i++) {
-            $hex = getHex($ip[$i]);
-            for ($j = 0; j < hex.length(); $j++) {
-                sb.append(hex.charAt(j));
-                if (i != ip.length -1 || j != hex.length() -1) {
-                    sb.append(".");
+        $sb = '';
+        $ip = $this->address;
+        for ($i = 0; $i < count($ip); $i++) {
+            $hex = $this->getHex($ip[$i]);
+            for ($j = 0; $j < strlen($hex); $j++) {
+                $sb .= $hex[$j];
+                if ($i != count($ip) -1 || $j != strlen($hex) -1) {
+                    $sb .= '.';
                 }
             }
         }
-        return sb.toString();
+        return $sb;
     }
 
     /**
@@ -273,7 +269,7 @@ class IPAddr {
      */
     public function getReverseIP() {
         if(isIPV6(getIPAddress())) {
-            $ip6 = new StringBuffer(getNibbleFormat());
+            $ip6 = new StringBuffer($this->getNibbleFormat());
             return ip6.reverse().append(".ip6.arpa").toString();
         }
         return (getIPAddress(reverseIP(address)) + ".in-addr.arpa");
@@ -416,6 +412,7 @@ class IPAddr {
 
     private static function getConvertedIP($ip) {
         // Convert the ip if its an ipv6 ip. For ipv4 no conversion is needed
+        //gethostbyaddr
         return Address.getByName(ip).getHostAddress();
     }
 
@@ -438,14 +435,14 @@ class IPAddr {
      * @throws PermErrorException if the given ipAddress is invalid
      */
     public static function getProperIpAddress($ip) {
-        if (isIPV6(ip) && isIPV4MappedIP(ip)) {
+        if (self::isIPV6($ip) && self::isIPV4MappedIP($ip)) {
             try {
-                return getConvertedIP(ip);
+                return self::getConvertedIP($ip);
             } catch (UnknownHostException $e) {
                 throw new PermErrorException("Invalid ipAddress: " + $ip);
             }
         }
-        return ip;
+        return $ip;
 
     }
 
@@ -455,7 +452,8 @@ class IPAddr {
      * @return
      */
     private static function isIPV4MappedIP($ip) {
-        return ip.toUpperCase().matches(ipv4MappedRegex);
+        return preg_match('/' . SPFTermsRegexps::process(self::$ipv4MappedRegex) . '/',
+                    strtoupper($ip), $match) > 0;
     }
 
 }

@@ -27,6 +27,8 @@ namespace PHP_SPF\Core;
  *
  * see org.apache.harmony.util.Inet6Util
  */
+use PHP_SPF\Util\StringTokenizer;
+
 class Inet6Util {
 
     private function __construct() {
@@ -39,8 +41,8 @@ class Inet6Util {
      */
     public static function createByteArrayFromIPAddressString($ipAddressString) {
 
-        if (isValidIPV4Address(ipAddressString)) {
-            $tokenizer = new StringTokenizer($ipAddressString, ".");
+        if (self::isValidIPV4Address($ipAddressString)) {
+            $tokenizer = new StringTokenizer($str, '.');
             $token = "";
             $tempInt = 0;
             $byteAddress = array();
@@ -54,15 +56,14 @@ class Inet6Util {
         }
 
         if ($ipAddressString[0] == '[') {
-            $ipAddressString = $ipAddressString.substring(1, ipAddressString
-                    .length() - 1);
+            $ipAddressString = substr($ipAddressString, 1, strlen($ipAddressString) - 1);
         }
 
-        $tokenizer = new StringTokenizer(ipAddressString, ":.", true);
+        $tokenizer = new StringTokenizer($ipAddressString, ':.', true);
         $hexStrings = array();
         $decStrings = array();
-        $token = "";
-        $prevToken = "";
+        $token = '';
+        $prevToken = '';
         $doubleColonIndex = -1; // If a double colon exists, we need to
         // insert 0s.
 
@@ -77,8 +78,8 @@ class Inet6Util {
 
             if ($token === ':') {
                 if ($prevToken === ':') {
-                    $doubleColonIndex = $hexStrings.size();
-                } else if (!$prevToken === '') {
+                    $doubleColonIndex = count($hexStrings);
+                } else if (! ($prevToken === '')) {
                     $hexStrings[] = $prevToken;
                 }
             } else if ($token === '.') {
@@ -86,14 +87,16 @@ class Inet6Util {
             }
         }
 
+
+
         if ($prevToken === ':') {
             if ($token === ':') {
-                $doubleColonIndex = hexStrings.size();
+                $doubleColonIndex = count($hexStrings);
             } else {
-                hexStrings.add(token);
+                $hexStrings[] = $token;
             }
-        } else if (prevToken.equals(".")) {
-            decStrings.add(token);
+        } else if ($prevToken === '.') {
+            $decStrings[] = $token;
         }
 
         // figure out how many hexStrings we should have
@@ -102,35 +105,34 @@ class Inet6Util {
 
         // If we have an IPv4 address tagged on at the end, subtract
         // 4 bytes, or 2 hex words from the total
-        if ($decStrings.size() > 0) {
+        if (count($decStrings) > 0) {
             $hexStringsLength -= 2;
         }
 
         // if we hit a double Colon add the appropriate hex strings
         if ($doubleColonIndex != -1) {
-            $numberToInsert = hexStringsLength - hexStrings.size();
+            $numberToInsert = $hexStringsLength - count($hexStrings);
             for ($i = 0; $i < $numberToInsert; $i++) {
-                $hexStrings.add(doubleColonIndex, "0");
+                array_unshift($hexStrings, $doubleColonIndex);
             }
         }
 
         $ipByteArray = new \SplFixedArray(16);
 
         // Finally convert these strings to bytes...
-        for ($i = 0; $i < $hexStrings.size(); $i++) {
-            convertToBytes((String) hexStrings.get(i), ipByteArray, i * 2);
+        for ($i = 0; $i < count($hexStrings); $i++) {
+            self::convertToBytes((string) $hexStrings[$i], $ipByteArray, $i * 2);
         }
 
         // Now if there are any decimal values, we know where they go...
-        for ($i = 0; i < decStrings.size(); $i++) {
-            $ipByteArray[$i + 12] = /*(byte)*/ (Integer.parseInt((String) decStrings
-                    .get(i)) & 255);
+        for ($i = 0; $i < count($decStrings); $i++) {
+            $ipByteArray[$i + 12] = /*(byte)*/ (intval((string) $decStrings[$i]) & 255);
         }
 
         // now check to see if this guy is actually and IPv4 address
         // an ipV4 address is ::FFFF:d.d.d.d
         $ipV4 = true;
-        for ($i = 0; i < 10; $i++) {
+        for ($i = 0; $i < 10; $i++) {
             if ($ipByteArray[$i] != 0) {
                 $ipV4 = false;
                 break;
@@ -149,40 +151,39 @@ class Inet6Util {
             return $ipv4ByteArray;
         }
 
-        return ipByteArray;
+        return $ipByteArray;
 
     }
 
     /** Converts a 4 character hex word into a 2 byte word equivalent */
-    public static function convertToBytes($hexWord, array $ipByteArray, $byteIndex) {
-
-        $hexWordLength = hexWord.length();
+    public static function convertToBytes($hexWord, \SplFixedArray $ipByteArray, $byteIndex) {
+        $hexWordLength = strlen($hexWord);
         $hexWordIndex = 0;
-        $ipByteArray[byteIndex] = 0;
-        $ipByteArray[byteIndex + 1] = 0;
+        $ipByteArray[$byteIndex] = 0;
+        $ipByteArray[$byteIndex + 1] = 0;
         $charValue;
 
         // high order 4 bits of first byte
         if ($hexWordLength > 3) {
-            $charValue = getIntValue(hexWord.charAt($hexWordIndex++));
-            $ipByteArray[byteIndex] = /*(byte)*/ ($ipByteArray[byteIndex] | (charValue << 4));
+            $charValue = self::getIntValue($hexWord[$hexWordIndex++]);
+            $ipByteArray[$byteIndex] = /*(byte)*/ ($ipByteArray[$byteIndex] | ($charValue << 4));
         }
 
         // low order 4 bits of the first byte
-        if (hexWordLength > 2) {
-            $charValue = getIntValue(hexWord.charAt($hexWordIndex++));
-            $ipByteArray[byteIndex] = /*(byte)*/ ($ipByteArray[byteIndex] | charValue);
+        if ($hexWordLength > 2) {
+            $charValue = self::getIntValue($hexWord[$hexWordIndex++]);
+            $ipByteArray[$byteIndex] = /*(byte)*/ ($ipByteArray[$byteIndex] | $charValue);
         }
 
         // high order 4 bits of second byte
-        if (hexWordLength > 1) {
-            $charValue = getIntValue(hexWord.charAt($hexWordIndex++));
-            $ipByteArray[byteIndex + 1] = /*(byte)*/ ($ipByteArray[byteIndex + 1] | ($charValue << 4));
+        if ($hexWordLength > 1) {
+            $charValue = self::getIntValue($hexWord[$hexWordIndex++]);
+            $ipByteArray[$byteIndex + 1] = /*(byte)*/ ($ipByteArray[$byteIndex + 1] | ($charValue << 4));
         }
 
         // low order 4 bits of the first byte
-        $charValue = getIntValue(hexWord.charAt(hexWordIndex));
-        $ipByteArray[byteIndex + 1] = /*(byte)*/ ($ipByteArray[byteIndex + 1] | $charValue & 15);
+        $charValue = self::getIntValue($hexWord[$hexWordIndex]);
+        $ipByteArray[$byteIndex + 1] = /*(byte)*/ ($ipByteArray[$byteIndex + 1] | $charValue & 15);
     }
 
     public static function getIntValue($c) {
@@ -210,7 +211,7 @@ class Inet6Util {
                 return 9;
         }
 
-        $c = Character.toLowerCase(c);
+        $c = strtolower($c);
         switch ($c) {
             case 'a':
                 return 10;

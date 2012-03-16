@@ -85,9 +85,9 @@ class SPFSession implements MacroData {
         $this->hostName = trim($heloDomain);
 
         try {
-            $this->ipAddress = IPAddr::getProperIpAddress(clientIP.trim());
+            $this->ipAddress = IPAddr::getProperIpAddress(trim($clientIP));
             // get the in Address
-            $this->inAddress = IPAddr.getInAddress(clientIP);
+            $this->inAddress = IPAddr::getInAddress($clientIP);
         } catch (PermErrorException $e) {
             // ip was not rfc conform
             $this->setCurrentResultExpanded(e.getResult());
@@ -103,8 +103,8 @@ class SPFSession implements MacroData {
             // What to do when mailFrom is "@example.com" ?
             if (count($fromParts) > 1) {
                 $this->senderDomain = $fromParts[count($fromParts)-1];
-                $this->currentSenderPart = $this->mailFrom.substring(0, mailFrom.length() - senderDomain.length() - 1);
-                if ($this->currentSenderPart.length() == 0) {
+                $this->currentSenderPart = substr($this->mailFrom, 0, strlen($this->mailFrom) - strlen($this->senderDomain) - 1);
+                if (count($this->currentSenderPart) == 0) {
                     $this->currentSenderPart = "postmaster";
                 }
             } else {
@@ -178,7 +178,7 @@ class SPFSession implements MacroData {
      * @return ipAddres
      */
     public function getIpAddress() {
-        return ipAddress;
+        return $this->ipAddress;
     }
 
     /**
@@ -186,9 +186,9 @@ class SPFSession implements MacroData {
      */
     public function getMacroIpAddress() {
 
-        if (IPAddr::isIPV6($ipAddress)) {
+        if (IPAddr::isIPV6($this->ipAddress)) {
             try {
-                return IPAddr::getAddress($ipAddress)->getNibbleFormat();
+                return IPAddr::getAddress($this->ipAddress)->getNibbleFormat();
             } catch (PermErrorException $e) {
             }
         }
