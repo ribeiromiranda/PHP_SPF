@@ -20,6 +20,12 @@
 
 namespace PHP_SPF;
 
+use PHP_SPF\Executor\SynchronousSPFExecutor;
+
+use PHP_SPF\Core\MacroExpand;
+
+use Tester\PHP_SPF\SPFYamlTestDescriptor;
+
 abstract class AbstractYamlTest extends \PHPUnit_Framework_TestCase {
 
     const FAKE_SERVER_PORT = 31348;
@@ -46,45 +52,50 @@ abstract class AbstractYamlTest extends \PHPUnit_Framework_TestCase {
     private static $dns;
     protected static $dnsTestServer;
 
-    public function __construct(SPFYamlTestDescriptor $def, $test = null) {
+    public function __construct($def, $test = null) {
+        if (is_string($def)) {
+            $name = $def;
+            $def = null;
+            $tests = SPFYamlTestDescriptor::loadTests($this->getFilename());
+            $i = $tests->iterator();
+            while ($i->hasNext() && $data == null) {
+                $auxDef = $i->next();
+                if ($name === $def->getComment() . ' #COMPLETE!') {
+                    $def = $auxDef;
+                    $test = null;
 
-        if ($test === null) {
-            parent::__construct($def->getComment() . " #COMPLETE!");
-        } else {
-            parent::__construct($def->getComment()+" #{$test}");
+                } else {
+                    $j = $def->getTests()->keySet()->iterator();
+                    while ($j->hasNext() && $data == null) {
+                        $auxText = $j->next();
+                        if ($name === $def->getComment() . ' #' . $test) {
+                            $def = $auxDef;
+                            $test = $auxText;
+                        }
+                    }
+                }
+            }
+
+        } else if (! ($def instanceof SPFYamlTestDescriptor)) {
+            throw new \InvalidArgumentException();
         }
 
+        $this->assertNotNull($data);
+        // assertNotNull(test);
 
+        if ($test === null) {
+            $name = "{$def->getComment()} #COMPLETE!";
+        } else {
+            $name = "{$def->getComment()} #{$test}";
+        }
+
+        parent::__construct($name);
 
         $this->data = $def;
         $this->test = $test;
     }
 
     protected abstract function getFilename();
-
-    /*protected AbstractYamlTest(String name) {
-        super(name);
-        List<SPFYamlTestDescriptor> tests = SPFYamlTestDescriptor.loadTests(getFilename());
-        Iterator<SPFYamlTestDescriptor> i = tests.iterator();
-        while (i.hasNext() && data == null) {
-            SPFYamlTestDescriptor def = i.next();
-            if (name.equals(def.getComment()+" #COMPLETE!")) {
-                data = def;
-                this.test = null;
-            } else {
-                Iterator<String> j = def.getTests().keySet().iterator();
-                while (j.hasNext() && data == null) {
-                    String test = j.next();
-                    if (name.equals(def.getComment()+ " #"+test)) {
-                        data = def;
-                        this.test = test;
-                    }
-                }
-            }
-        }
-        assertNotNull(data);
-        // assertNotNull(test);
-    }*/
 
     protected function runTest() {
         if ($log == null) {
@@ -100,42 +111,22 @@ abstract class AbstractYamlTest extends \PHPUnit_Framework_TestCase {
             */
 
             $this->parser = new RFC4408SPF1ParserTest(log.getChildLogger("parser"), new DefaultTermsFactory($log->getChildLogger("termsfactory"), new WiringServiceTest1()));
-
-            /*$this->parser = new RFC4408SPF1Parser(log.getChildLogger("parser"), new DefaultTermsFactory(log.getChildLogger("termsfactory"), new WiringService() {
-
-                public void wire(Object component) throws WiringServiceException {
-                    if (component instanceof LogEnabled) {
-                        String[] path = component.getClass().toString().split("\\.");
-                        ((LogEnabled) component).enableLogging(log.getChildLogger("dep").getChildLogger(path[path.length-1].toLowerCase()));
-                    }
-                    if (component instanceof MacroExpandEnabled) {
-                        ((MacroExpandEnabled) component).enableMacroExpand(macroExpand);
-                    }
-                    if (component instanceof DNSServiceEnabled) {
-                        ((DNSServiceEnabled) component).enableDNSService(dns);
-                    }
-                    if (component instanceof SPFCheckEnabled) {
-                        ((SPFCheckEnabled) component).enableSPFChecking(spf);
-                    }
-                }
-
-            }));*/
         }
         if (this.data != AbstractYamlTest.prevData) {
             self::$dns = new LoggingDNSService(getDNSService(), log.getChildLogger("dns"));
             self::$prevData = $this->data;
         }
         $this->macroExpand = new MacroExpand($log->getChildLogger("macroExpand"), self::$dns);
-        if ($this->getSpfExecutorType() == SYNCHRONOUS_EXECUTOR) {  // synchronous
-            $this->executor = new SynchronousSPFExecutor(log, dns);
-        } else if (getSpfExecutorType() == STAGED_EXECUTOR || getSpfExecutorType() == STAGED_EXECUTOR_MULTITHREADED){
-            $this->executor = new StagedMultipleSPFExecutor(log, new DNSServiceAsynchSimulator(dns, getSpfExecutorType() == STAGED_EXECUTOR_MULTITHREADED));
-        } else if ($this->getSpfExecutorType() == STAGED_EXECUTOR_DNSJNIO) {
+        if ($this->getSpfExecutorType() == self::SYNCHRONOUS_EXECUTOR) {  // synchronous
+            $this->executor = new SynchronousSPFExecutor($this->log, $this->dns);
+        } else if ($this->getSpfExecutorType() == self::STAGED_EXECUTOR || $this->getSpfExecutorType() == self::STAGED_EXECUTOR_MULTITHREADED){
+            $this->executor = new StagedMultipleSPFExecutor(log, new DNSServiceAsynchSimulator($this->dns, $this->getSpfExecutorType() == self::STAGED_EXECUTOR_MULTITHREADED));
+        } else if ($this->getSpfExecutorType() == self::STAGED_EXECUTOR_DNSJNIO) {
 
             // reset cache between usages of the asynchronous lookuper
-            LookupAsynch.setDefaultCache(new Cache(), DClass.IN);
+            LookupAsynch::setDefaultCache(new Cache(), DClass::IN);
             // reset cache between usages of the asynchronous lookuper
-            LookupAsynch.getDefaultCache(DClass.IN).clearCache();
+            LookupAsynch::getDefaultCache(DClass::IN)->clearCache();
 
             try {
                 $resolver;

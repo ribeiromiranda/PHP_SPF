@@ -18,41 +18,47 @@
 * under the License.                                           *
 ****************************************************************/
 
-namespace PHP_SPF\Core;
+namespace PHP_SPF\Executor;
 
 /**
- * This object is used as the return value for spf resolving tasks.
- * Every time a DNS resolution is needed the task should simply return
- * this one including the DNSRequest and a listener to be invoked
- * when the answer will be available.
+ * Implementation of an IRespone Object
+ *
  */
-class DNSLookupContinuation {
+class IResponseImpl implements IResponse {
 
-    private $request;
-    private $listener;
+    private $exception = null;
+    private $value = null;
+    private $id = null;
 
-    public function __construct(DNSRequest $request, SPFCheckerDNSResponseListener $listener) {
-        $this->request = $request;
-        $this->listener = $listener;
+    public function __construct($id, $arg) {
+        $this->id = $id;
+        if ($e instanceof \Exception) {
+            $this->exception = $arg;
+        } else if (is_array($e)) {
+            $this->value = $arg;
+
+        }
+
     }
 
     /**
-     * Return the DNSRequest which was used
-     *
-     * @return request
+     * @see org.apache.james.jspf.executor.IResponse#getException()
      */
-    public function getRequest() {
-        return $this->request;
+    public function getException() {
+        return $this->exception;
     }
 
     /**
-     * Return the SPFCheckerDNSResponseListener which should called for the DNSRequest
-     *
-     * @return listener
+     * @see org.apache.james.jspf.executor.IResponse#getId()
      */
-    public function getListener() {
-        return $this->listener;
+    public function getId() {
+        return $this->id;
     }
 
-
+    /**
+     * @see org.apache.james.jspf.executor.IResponse#getValue()
+     */
+    public function getValue() {
+        return $this->value;
+    }
 }

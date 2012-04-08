@@ -1,11 +1,12 @@
 <?php
+
 /****************************************************************
-* Licensed to the Apache Software Foundation (ASF) under one   *
+ * Licensed to the Apache Software Foundation (ASF) under one   *
 * or more contributor license agreements.  See the NOTICE file *
 * distributed with this work for additional information        *
 * regarding copyright ownership.  The ASF licenses this file   *
 * to you under the Apache License, Version 2.0 (the            *
-* "License"); you may not use this file except in compliance   *
+        * "License"); you may not use this file except in compliance   *
 * with the License.  You may obtain a copy of the License at   *
 *                                                              *
 *   http://www.apache.org/licenses/LICENSE-2.0                 *
@@ -18,41 +19,39 @@
 * under the License.                                           *
 ****************************************************************/
 
-namespace PHP_SPF\Core;
+namespace PHP_SPF;
 
-/**
- * This object is used as the return value for spf resolving tasks.
- * Every time a DNS resolution is needed the task should simply return
- * this one including the DNSRequest and a listener to be invoked
- * when the answer will be available.
- */
-class DNSLookupContinuation {
+class YamlTest extends AbstractYamlTest {
 
-    private $request;
-    private $listener;
+    const YAMLFILE2 = "tests.yml";
 
-    public function __construct(DNSRequest $request, SPFCheckerDNSResponseListener $listener) {
-        $this->request = $request;
-        $this->listener = $listener;
+    protected function __construct(SPFYamlTestDescriptor $def, $test) {
+        parent::__construct($def, $test);
     }
 
-    /**
-     * Return the DNSRequest which was used
-     *
-     * @return request
-     */
-    public function getRequest() {
-        return $this->request;
+    protected function getFilename() {
+        return self::YAMLFILE2;
     }
 
-    /**
-     * Return the SPFCheckerDNSResponseListener which should called for the DNSRequest
-     *
-     * @return listener
-     */
-    public function getListener() {
-        return $this->listener;
+    public static function suite() {
+        return new BasicSuite();
     }
+}
 
+
+class BasicSuite extends \PHPUnit_Framework_TestSuite {
+
+    public function __construct() {
+        parent::__construct();
+        $tests = SPFYamlTestDescriptor::loadTests(self::YAMLFILE2);
+        $i = $tests->iterator();
+        while ($i->hasNext()) {
+            $o = $i.next();
+            $ttt = $o->getTests()->keySet()->iterator();
+            while ($ttt->hasNext()) {
+                $this->addTest(new YamlTest($o, $ttt->next()));
+            }
+        }
+    }
 
 }

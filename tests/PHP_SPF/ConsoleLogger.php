@@ -18,7 +18,7 @@
 * under the License.                                           *
 ****************************************************************/
 
-namespace PHP_SPF\Core;
+namespace PHP_SPF;
 
 /**
  * Logger sending everything to the standard output streams.

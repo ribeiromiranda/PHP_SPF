@@ -18,41 +18,18 @@
 * under the License.                                           *
 ****************************************************************/
 
-namespace PHP_SPF\Core;
+namespace PHP_SPF\Executor;
 
-/**
- * This object is used as the return value for spf resolving tasks.
- * Every time a DNS resolution is needed the task should simply return
- * this one including the DNSRequest and a listener to be invoked
- * when the answer will be available.
- */
-class DNSLookupContinuation {
+use PHP_SPF\Core\SPFSession;
 
-    private $request;
-    private $listener;
-
-    public function __construct(DNSRequest $request, SPFCheckerDNSResponseListener $listener) {
-        $this->request = $request;
-        $this->listener = $listener;
-    }
+interface SPFExecutor {
 
     /**
-     * Return the DNSRequest which was used
+     * Execute SPF queries
      *
-     * @return request
+     * @param session
+     * @param result
      */
-    public function getRequest() {
-        return $this->request;
-    }
-
-    /**
-     * Return the SPFCheckerDNSResponseListener which should called for the DNSRequest
-     *
-     * @return listener
-     */
-    public function getListener() {
-        return $this->listener;
-    }
-
+    public function execute(SPFSession $session, FutureSPFResult $result);
 
 }
