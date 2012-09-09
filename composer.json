@@ -1,5 +1,5 @@
 {
-    "name": "ardemiranda/dnsphp",
+    "name": "ardemiranda/spf",
     "description": "PHP SPF (Sender Policy Framework)",
     "type": "library",
     "keywords": [
