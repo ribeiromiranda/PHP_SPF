@@ -1,0 +1,27 @@
+{
+    "name": "ardemiranda/dnsphp",
+    "description": "PHP SPF (Sender Policy Framework)",
+    "type": "library",
+    "keywords": [
+        "spf",
+        "Sender",
+        "Policy",
+        "Framework"
+    ],
+    "authors": [
+        {
+            "name": "André Ribeiro de Miranda",
+            "email": "ardemiranda@gmail.com"
+        }
+    ],
+    "require": {
+        "php": ">=5.3.3"
+        "ardemiranda/dnsphp": "master-dev"
+    },
+
+    "autoload": {
+        "psr-0": {
+            "SPF": "src/"
+        }
+    }
+}
