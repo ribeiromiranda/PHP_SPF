@@ -1,3 +1,0 @@
-[submodule "vendor/DNSPHP"]
-	path = vendor/DNSPHP
-	url = git@github.com:ardemiranda/dnsphp.git
